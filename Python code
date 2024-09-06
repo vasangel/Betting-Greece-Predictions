@@ -1,0 +1,54 @@
+import pandas as pd
+from sqlalchemy import create_engine
+import numpy as np
+from sklearn.linear_model import LinearRegression
+
+# Connect MySQLdb to PyCharm
+engine = create_engine('mysql+pymysql://root:#####@localhost:####/######')
+query = "SELECT * FROM revenue_trends"
+df = pd.read_sql(query, engine)
+
+# Define the metrics
+X = df[['year']]
+y_metric1 = df['online_casinos']
+y_metric2 = df['online_lottery']
+y_metric3 = df['online_sports_betting']
+
+# Init the model
+model_metric1 = LinearRegression()
+model_metric2 = LinearRegression()
+model_metric3 = LinearRegression()
+
+# Model for each metric
+model_metric1.fit(X, y_metric1)
+model_metric2.fit(X, y_metric2)
+model_metric3.fit(X, y_metric3)
+
+# Prediction for years 2024 to 2030
+future_years = pd.DataFrame({'year': np.arange(2024, 2031)})
+
+# Predictions for each metric
+predictions_metric1 = model_metric1.predict(future_years)
+predictions_metric2 = model_metric2.predict(future_years)
+predictions_metric3 = model_metric3.predict(future_years)
+
+# Combine predictions into a DataFrame
+predictions_df = pd.DataFrame({
+    'year': future_years['year'],
+    'online_casinos': predictions_metric1,
+    'online_lottery': predictions_metric2,
+    'online_sports_betting': predictions_metric3
+})
+
+full_df = pd.concat([df, predictions_df], ignore_index=True)
+
+# Formatting function for having only 2 decimals
+def format_number(x):
+    return f"{x:.6f}"
+
+# Apply formatting
+for column in ['online_casinos', 'online_lottery', 'online_sports_betting']:
+    full_df[column] = full_df[column].apply(format_number)
+
+
+full_df.to_csv('predicted_revenue_trends.csv', index=False)
